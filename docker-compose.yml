@@ -1,0 +1,56 @@
+version: "3.4"
+
+services:
+  api:
+    image: smsapi
+    container_name: sms-api
+    build:
+      context: .
+      dockerfile: SMS.Api/Dockerfile
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+      # - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__SMSConnectionString=Server=192.168.1.246,1433;Database=SMS1;TrustServerCertificate=True;Encrypt=false;User Id=sms_api_user;Password=123456
+      - Serilog__WriteTo__1__Args__connectionString=Server=192.168.1.246,1433;Database=SMS1;TrustServerCertificate=True;Encrypt=false;User Id=sms_api_user;Password=123456
+      - ReportServerBaseUrl=http://report:5000
+    # ports:
+    #   - "8081:80"
+    networks:
+      - backend
+  web:
+    image: smsweb
+    container_name: sms-web
+    build:
+      context: SMS.Web
+      dockerfile: Dockerfile
+    depends_on:
+      - api
+    # ports:
+    #   - 8082:80
+    networks:
+      - backend
+  report:
+    image: smsreport
+    container_name: sms-report
+    build:
+      context: SMS.Reports
+      dockerfile: Dockerfile
+    # command: ["yarn", "start"]
+    networks:
+      - backend
+  proxy:
+    image: smsproxy
+    container_name: sms-proxy
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    ports:
+      - "4000:80"
+    depends_on:
+      - web
+    networks:
+      - backend
+      - frontend
+networks:
+  frontend:
+  backend:

@@ -1,0 +1,50 @@
+version: "3.4"
+
+services:
+  api:
+    image: ghcr.io/fgelaw/smsapi:1.0.0.20
+    container_name: sms-api
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+      # - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__SMSConnectionString=Server=192.168.1.246,1433;Database=SMS1;TrustServerCertificate=True;Encrypt=false;User Id=sms_api_user;Password=123456
+      - Serilog__WriteTo__1__Args__connectionString=Server=192.168.1.246,1433;Database=SMS1;TrustServerCertificate=True;Encrypt=false;User Id=sms_api_user;Password=123456
+      - ReportServerBaseUrl=http://report:5000
+      - Email__Exchange__Username=EmailUserName
+      - Email__Exchange__Password= EmailPassword
+      - Email__Exchange__DecryptionKey=DecryptionKey
+    networks:
+      - backend
+    deploy:
+      replicas: 1
+  web:
+    image: ghcr.io/fgelaw/smsweb:1.0.0.20
+    container_name: sms-web
+    depends_on:
+      - api
+    networks:
+      - backend
+    deploy:
+      replicas: 1
+  report:
+    image: ghcr.io/fgelaw/smsreport:1.0.0.20
+    container_name: sms-report
+    networks:
+      - backend
+    deploy:
+      replicas: 1
+  proxy:
+    image: ghcr.io/fgelaw/smsproxy:1.0.0.20
+    container_name: sms-proxy
+    ports:
+      - "4000:80"
+    depends_on:
+      - web
+    deploy:
+      replicas: 1
+    networks:
+      - backend
+      - frontend
+networks:
+  frontend:
+  backend:
